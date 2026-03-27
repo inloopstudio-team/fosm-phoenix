@@ -4,7 +4,7 @@ defmodule FosmWeb.Admin.AuthorizationTest do
 
   Verifies that admin routes require authentication and proper permissions.
   """
-  use Fosm.ConnCase, async: true
+  use FosmWeb.ConnCase, async: true
 
   import Fosm.Factory
   import Fosm.TestHelpers

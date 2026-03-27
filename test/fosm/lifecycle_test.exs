@@ -298,8 +298,8 @@ defmodule Fosm.LifecycleTest do
   end
 
   # ============================================================================
-  // Snapshot Configuration Tests
-  // ============================================================================
+  # Snapshot Configuration Tests
+  # ============================================================================
 
   describe "snapshot configuration" do
     test "snapshot strategy is configured" do
@@ -317,8 +317,8 @@ defmodule Fosm.LifecycleTest do
   end
 
   # ============================================================================
-  // Lifecycle Introspection Tests
-  // ============================================================================
+  # Lifecycle Introspection Tests
+  # ============================================================================
 
   describe "lifecycle introspection" do
     test "fosm_lifecycle/0 returns definition" do

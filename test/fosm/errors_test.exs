@@ -175,7 +175,8 @@ defmodule Fosm.ErrorsTest do
       assert message =~ "read"
     end
 
-    test "handles symbol actors (system/agent)" don      error = %Errors.AccessDenied{
+    test "handles symbol actors (system/agent)" do
+      error = %Errors.AccessDenied{
         action: :modify,
         actor: :system,
         resource: %{id: 1},
