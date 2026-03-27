@@ -19,6 +19,8 @@ defmodule Fosm.Application do
   end
 
   defp oban_config do
-    Application.get_env(:fosm, Oban, [repo: Fosm.Repo, queues: [default: 10]])
+    # Ensure repo is always set, even if config hasn't been merged yet
+    base_config = Application.get_env(:fosm, Oban, [])
+    Keyword.put(base_config, :repo, Fosm.Repo)
   end
 end
