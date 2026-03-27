@@ -165,12 +165,15 @@ defmodule Fosm.Factory do
   def webhook_subscription_factory do
     %Fosm.WebhookSubscription{
       id: System.unique_integer([:positive]),
-      model_class_name: "Fosm.Invoice",
-      event_name: "pay",
       url: "https://example.com/webhooks/invoice-paid",
+      events: ["pay"],
+      record_type: "Fosm.Invoice",
       secret_token: "secret_#{System.unique_integer()}",
       active: true,
-      inserted_at: DateTime.utc_now()
+      delivery_mode: "async",
+      retry_count: 0,
+      inserted_at: DateTime.utc_now(),
+      updated_at: DateTime.utc_now()
     }
   end
 
