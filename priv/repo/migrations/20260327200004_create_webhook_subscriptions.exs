@@ -35,30 +35,42 @@ defmodule Fosm.Repo.Migrations.CreateWebhookSubscriptions do
     create(index(:fosm_webhook_subscriptions, [:active]))
     create(index(:fosm_webhook_subscriptions, [:record_type]))
     create(index(:fosm_webhook_subscriptions, [:record_type, :record_id]))
-    create(index(:fosm_webhook_subscriptions, [:events], using: :gin))
     create(index(:fosm_webhook_subscriptions, [:inserted_at]))
 
-    # Partial index for active subscriptions only
-    create(
-      index(:fosm_webhook_subscriptions, [:record_type, :record_id],
-        where: "active = true",
-        name: :webhook_subscriptions_active_idx
-      )
-    )
+    if postgres?() do
+      # GIN index for events array (PostgreSQL only)
+      create(index(:fosm_webhook_subscriptions, [:events], using: :gin))
 
-    # Index for subscriptions needing retry
-    create(
-      index(:fosm_webhook_subscriptions, [:retry_count, :last_delivery_status],
-        where: "active = true AND retry_count < 10",
-        name: :webhook_subscriptions_needs_retry_idx
+      # Partial index for active subscriptions only (PostgreSQL)
+      create(
+        index(:fosm_webhook_subscriptions, [:record_type, :record_id],
+          where: "active = true",
+          name: :webhook_subscriptions_active_idx
+        )
       )
-    )
 
-    # GIN index for metadata
-    create(index(:fosm_webhook_subscriptions, [:metadata], using: :gin))
+      # Index for subscriptions needing retry (PostgreSQL)
+      create(
+        index(:fosm_webhook_subscriptions, [:retry_count, :last_delivery_status],
+          where: "active = true AND retry_count < 10",
+          name: :webhook_subscriptions_needs_retry_idx
+        )
+      )
+
+      # GIN index for metadata (PostgreSQL only)
+      create(index(:fosm_webhook_subscriptions, [:metadata], using: :gin))
+    end
   end
 
   def down do
     drop(table(:fosm_webhook_subscriptions))
+  end
+
+  # Helper to check if we're using PostgreSQL
+  defp postgres? do
+    repo = Application.get_env(:fosm, :ecto_repos, [Fosm.Repo]) |> List.first()
+    config = if repo, do: Application.get_env(:fosm, repo, [])
+    adapter = if config, do: Keyword.get(config, :adapter, Ecto.Adapters.Postgres)
+    adapter == Ecto.Adapters.Postgres
   end
 end

@@ -31,19 +31,29 @@ defmodule Fosm.Repo.Migrations.CreateAccessEvents do
     # Composite index for access pattern queries
     create(index(:fosm_access_events, [:user_type, :user_id, :resource_type]))
 
-    # Index for denied access monitoring
-    create(
-      index(:fosm_access_events, [:inserted_at],
-        where: "result = 'denied'",
-        name: :access_events_denied_idx
+    if postgres?() do
+      # Index for denied access monitoring (PostgreSQL partial index)
+      create(
+        index(:fosm_access_events, [:inserted_at],
+          where: "result = 'denied'",
+          name: :access_events_denied_idx
+        )
       )
-    )
 
-    # GIN index for metadata
-    create(index(:fosm_access_events, [:metadata], using: :gin))
+      # GIN index for metadata (PostgreSQL only)
+      create(index(:fosm_access_events, [:metadata], using: :gin))
+    end
   end
 
   def down do
     drop(table(:fosm_access_events))
+  end
+
+  # Helper to check if we're using PostgreSQL
+  defp postgres? do
+    repo = Application.get_env(:fosm, :ecto_repos, [Fosm.Repo]) |> List.first()
+    config = if repo, do: Application.get_env(:fosm, repo, [])
+    adapter = if config, do: Keyword.get(config, :adapter, Ecto.Adapters.Postgres)
+    adapter == Ecto.Adapters.Postgres
   end
 end
