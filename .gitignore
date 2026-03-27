@@ -1,0 +1,46 @@
+# Build artifacts
+/_build/
+/deps/
+*.beam
+/config/*.secret.exs
+.elixir_ls/
+
+# Generated files
+erl_crash.dump
+*.ez
+*.tar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test artifacts
+/cover/
+
+# Database
+*.db
+*.sqlite3
+
+# Temporary files
+/tmp/
+/priv/static/assets/
+/priv/static/cache_manifest.json
+
+# Node modules (if using assets)
+/node_modules/
+/assets/node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Pi messenger
+.pi/
