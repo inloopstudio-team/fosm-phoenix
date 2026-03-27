@@ -1,4 +1,4 @@
-defmodule Elixir.Fosm.Repo.Migrations.CreateInvoices do
+defmodule Fosm.Repo.Migrations.CreateInvoices do
   use Ecto.Migration
 
   def change do
