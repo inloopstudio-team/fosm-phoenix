@@ -19,15 +19,14 @@ defmodule Fosm.Repo do
         database: "fosm_dev.db"
   """
 
-  # Determine adapter at compile time from config
-  adapter = Application.compile_env(:fosm, [Fosm.Repo, :adapter], Ecto.Adapters.Postgres)
-
+  # Use Postgres as default at compile time, allow runtime override via config
   use Ecto.Repo,
     otp_app: :fosm,
-    adapter: adapter
+    adapter: Ecto.Adapters.Postgres
 
   @doc """
   Returns the configured adapter module for this repository.
+  This reads from runtime config and may differ from compile-time default.
   """
   def adapter_module do
     config = config()
