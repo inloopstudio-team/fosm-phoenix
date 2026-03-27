@@ -1,5 +1,18 @@
 import Config
 
+# Development environment uses SQLite for simplicity
+config :fosm, Fosm.Repo,
+  adapter: Ecto.Adapters.SQLite3,
+  database: "fosm_dev.db",
+  pool_size: 5,
+  show_sensitive_data_on_connection_error: true,
+  # SQLite-specific settings
+  journal_mode: :wal,
+  cache_size: -64000,
+  temp_store: :memory,
+  foreign_keys: true,
+  busy_timeout: 5000
+
 # Development environment configuration
 config :fosm,
   repo: Fosm.Repo,

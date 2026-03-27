@@ -1,7 +1,9 @@
 import Config
 
 # Configure your database for test environment
+# Default to PostgreSQL for CI/testing, can be overridden via env vars
 config :fosm, Fosm.Repo,
+  adapter: Ecto.Adapters.Postgres,
   database: "fosm_test#{System.get_env("MIX_TEST_PARTITION")}",
   username: System.get_env("DB_USER") || "postgres",
   password: System.get_env("DB_PASSWORD") || "postgres",

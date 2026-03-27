@@ -35,7 +35,8 @@ defmodule Fosm.MixProject do
       # Core dependencies
       {:ecto, "~> 3.11"},
       {:ecto_sql, "~> 3.11"},
-      {:postgrex, ">= 0.0.0"},
+      {:postgrex, ">= 0.0.0", optional: true},
+      {:exqlite, "~> 0.23", optional: true},
 
       # Phoenix/LiveView (required for Admin UI)
       {:phoenix, "~> 1.7"},
