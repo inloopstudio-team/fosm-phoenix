@@ -41,3 +41,6 @@ config :logger, :console,
   metadata: [:request_id]
 
 config :elixir, :ansi_enabled, true
+
+# Import environment-specific config
+import_config "#{config_env()}.exs"

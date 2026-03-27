@@ -46,9 +46,10 @@ defmodule Fosm.Repo.Migrations.CreateRoleAssignments do
     create(index(:fosm_role_assignments, [:expires_at]))
 
     # Partial index for active (non-expired) assignments
+    # Using expires_at IS NULL only since NOW() is not immutable
     create(
-      index(:fosm_role_assignments, [:user_type, :user_id, :resource_type],
-        where: "expires_at IS NULL OR expires_at > NOW()",
+      index(:fosm_role_assignments, [:user_type, :user_id, :resource_type, :expires_at],
+        where: "expires_at IS NULL",
         name: :role_assignments_active_idx
       )
     )
