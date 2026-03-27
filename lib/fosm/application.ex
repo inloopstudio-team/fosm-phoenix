@@ -8,7 +8,7 @@ defmodule Fosm.Application do
   def start(_type, _args) do
     children = [
       Fosm.Repo,
-      {Oban, Application.fetch_env!(:fosm, Oban)},
+      {Oban, oban_config()},
       Fosm.Current,  # RBAC cache
       Fosm.Registry,  # Model registry
       Fosm.Agent.Session  # Agent conversation persistence
@@ -16,5 +16,9 @@ defmodule Fosm.Application do
 
     opts = [strategy: :one_for_one, name: Fosm.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  defp oban_config do
+    Application.get_env(:fosm, Oban, [repo: Fosm.Repo, queues: [default: 10]])
   end
 end

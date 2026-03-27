@@ -1,11 +1,14 @@
 import Config
 
+# Ecto repositories
+config :fosm, ecto_repos: [Fosm.Repo]
+
 config :fosm, Fosm.Repo,
   database: "fosm_dev",
   username: System.get_env("DB_USER") || "postgres",
   password: System.get_env("DB_PASSWORD") || "postgres",
   hostname: System.get_env("DB_HOST") || "localhost",
-  port: String.to_integer(System.get_env("DB_PORT") || "5432"),
+  port: String.to_integer(System.get_env("DB_PORT") || "5545"),
   pool_size: 10,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true

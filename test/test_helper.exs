@@ -1,7 +1,11 @@
 ExUnit.start()
 
-# Create the test database and run migrations
-# These will be handled by mix test alias
+# Ensure the Ecto repository and application are started for tests
+# Database sandbox mode is set per-test in test/support/data_case.ex
+alias Fosm.Repo
 
-# Configure Ecto sandbox for tests
-# This will be configured in test/support/data_case.ex once that's created
+# Start the Ecto Sandbox for test isolation
+Ecto.Adapters.SQL.Sandbox.mode(Fosm.Repo, :manual)
+
+# Start Oban in testing mode (inline execution)
+{:ok, _pid} = Oban.start_link(repo: Fosm.Repo, testing: :inline)
