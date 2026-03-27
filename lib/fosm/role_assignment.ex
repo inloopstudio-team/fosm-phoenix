@@ -50,7 +50,11 @@ defmodule Fosm.RoleAssignment do
     |> cast(attrs, @required_fields ++ @optional_fields)
     |> validate_required(@required_fields)
     |> unique_constraint([:user_type, :user_id, :resource_type, :resource_id, :role_name],
-      name: :fosm_role_assignments_unique_idx,
+      name: :role_assignments_unique_idx,
+      message: "has already been taken"
+    )
+    |> unique_constraint([:user_type, :user_id, :resource_type, :role_name],
+      name: :role_assignments_type_level_unique_idx,
       message: "has already been taken"
     )
   end

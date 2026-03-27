@@ -38,6 +38,9 @@ defmodule Fosm.AccessEvent do
     # Role
     field(:role_name, :string)
 
+    # Result
+    field(:result, :string)
+
     # Actor (who performed the action)
     field(:performed_by_type, :string)
     field(:performed_by_id, :string)
@@ -48,7 +51,7 @@ defmodule Fosm.AccessEvent do
     timestamps(type: :utc_datetime, updated_at: false)
   end
 
-  @required_fields [:action, :user_type, :user_id, :resource_type, :role_name]
+  @required_fields [:action, :user_type, :user_id, :resource_type, :role_name, :result]
   @optional_fields [:resource_id, :user_label, :performed_by_type, :performed_by_id, :metadata]
 
   @doc """

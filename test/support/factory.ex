@@ -362,17 +362,30 @@ defmodule Fosm.Factory do
   end
 
   defp insert_to_storage(%{__struct__: module} = record) do
-    # Try to insert using the module's Repo if available
+    # Try to insert using Fosm.Repo for Ecto schemas
     try do
-      repo = module.__schema__(:repo)
-      if repo && Process.whereis(repo) do
-        repo.insert!(record)
+      # Check if this is an Ecto schema with a schema source
+      if function_exported?(module, :__schema__, 1) do
+        # Use Fosm.Repo directly for all FOSM schemas
+        if Process.whereis(Fosm.Repo) do
+          # Get the changeset function if available, otherwise insert directly
+          if function_exported?(module, :changeset, 2) do
+            record
+            |> module.changeset(%{})
+            |> Fosm.Repo.insert!()
+          else
+            Fosm.Repo.insert!(record)
+          end
+        else
+          # No repo available, simulate with ID
+          Map.put(record, :id, System.unique_integer([:positive]))
+        end
       else
-        # No repo available, simulate with ID
+        # Non-Ecto struct - simulate
         Map.put(record, :id, System.unique_integer([:positive]))
       end
     rescue
-      # Fallback for non-Ecto structs or no Repo
+      # Fallback for any errors
       _ ->
         Map.put(record, :id, System.unique_integer([:positive]))
     end

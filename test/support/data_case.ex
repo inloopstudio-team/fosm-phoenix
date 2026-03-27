@@ -47,7 +47,15 @@ defmodule Fosm.DataCase do
     Fosm.Current.clear()
 
     # Clear any deferred effects from process dictionary
-    for key <- Map.keys(Process.get() || %{}), is_tuple(key) and elem(key, 0) == :fosm_deferred_effects do
+    process_dict = Process.get() || []
+    keys_to_delete =
+      Enum.filter(process_dict, fn
+        {key, _} when is_tuple(key) and elem(key, 0) == :fosm_deferred_effects -> true
+        _ -> false
+      end)
+      |> Enum.map(fn {key, _} -> key end)
+
+    for key <- keys_to_delete do
       Process.delete(key)
     end
 

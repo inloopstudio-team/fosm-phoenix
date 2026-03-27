@@ -36,10 +36,9 @@ defmodule Fosm.Invoice do
   def changeset(struct, attrs \\ %{}) do
     struct
     |> cast(attrs, [
-      :number, :amount, :due_date
+      :number, :amount, :due_date, :state, :fosm_metadata
     ])
     |> validate_required([:number, :amount])
-
   end
 
   @doc """
@@ -176,12 +175,12 @@ defmodule Fosm.Invoice do
   end
 
   def terminal_states(query \\ __MODULE__) do
-    states = [:paid, :void]
+    states = ["paid", "void"]
     from(q in query, where: q.state in ^states)
   end
 
   def non_terminal_states(query \\ __MODULE__) do
-    states = [:draft, :sent]
+    states = ["draft", "sent"]
     from(q in query, where: q.state in ^states)
   end
 
