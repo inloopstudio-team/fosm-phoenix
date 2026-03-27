@@ -14,9 +14,13 @@ defmodule <%= @module %> do
   ## Usage
 
       # Create in initial state
-      {:ok, <%= @resource_path %>} = %<%= @module %>{}
-        |> changeset(%{<%= if @fields != [], do: Enum.map_join(@fields, ", ", fn {name, _} -> "#{name}: value" end) <> ", " end %>state: :<%= Enum.find(@states, &(&1.type == :initial))[:name] %>})
+<%= if @fields != [] do %>      {:ok, <%= @resource_path %>} = %<%= @module %>{}
+        |> changeset(%{<%= Enum.map_join(@fields, ", ", fn {name, _} -> "#{name}: value" end) %>, state: :<%= Enum.find(@states, &(&1.type == :initial))[:name] %>})
         |> <%= @app_module %>.Repo.insert()
+<% else %>      {:ok, <%= @resource_path %>} = %<%= @module %>{}
+        |> changeset(%{state: :<%= Enum.find(@states, &(&1.type == :initial))[:name] %>})
+        |> <%= @app_module %>.Repo.insert()
+<% end %>
 
       # Transition via event
       {:ok, <%= @resource_path %>} = <%= @module %>.fire!(<%= @resource_path %>, :complete, actor: current_user)
@@ -57,7 +61,9 @@ defmodule <%= @module %> do
     |> cast(attrs, [
       <%= Enum.map_join(@fields, ", ", fn {name, _} -> inspect(name) end) %>
     ])
-    |> validate_required([<%= if @fields != [], do: Enum.map_join(Enum.take(@fields, 2), ", ", fn {name, _} -> inspect(name) end), else: "" %>])
+<%= if @fields != [] do %>    |> validate_required([<%= Enum.map_join(Enum.take(@fields, min(2, length(@fields))), ", ", fn {name, _} -> inspect(name) end) %>])
+<% else %>    # Add required validations here
+<% end %>
   end
 
   @doc """

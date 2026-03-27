@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.AgentChatLive do
   @moduledoc """
   LiveView for conversational AI agent interface.
@@ -210,7 +211,10 @@ defmodule FosmWeb.Admin.AgentChatLive do
               )
             ]}>
               <!-- Message Content -->
-              <div class="prose prose-sm max-w-none <%= if(msg.role == "user", do: "prose-invert") %>">
+              <div class={[
+                "prose prose-sm max-w-none",
+                if(msg.role == "user", do: "prose-invert", else: "")
+              ]}>
                 <%= format_content(msg.content) %>
               </div>
 
@@ -299,7 +303,7 @@ defmodule FosmWeb.Admin.AgentChatLive do
             value={@input}
             phx-change="update_input"
             phx-debounce="100"
-            placeholder="Ask the agent about <%= @slug %> records..."
+            placeholder={"Ask the agent about #{@slug} records..."}
             class="flex-1 rounded-lg border-gray-300 px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             autocomplete="off"
             disabled={@loading}
@@ -524,4 +528,5 @@ defmodule FosmWeb.Admin.AgentChatLive do
 
   defp format_error(reason) when is_binary(reason), do: reason
   defp format_error(reason), do: "An error occurred: #{inspect(reason)}"
+end
 end

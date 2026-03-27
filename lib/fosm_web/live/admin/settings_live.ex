@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.SettingsLive do
   @moduledoc """
   Settings page LiveView for FOSM configuration.
@@ -185,8 +186,7 @@ defmodule FosmWeb.Admin.SettingsLive do
 DATABASE_URL=${DATABASE_URL:-"not set"}
 
 # LLM Provider (at least one required for AI features)
-<%= for provider <- @providers do %><%= provider.env_key %>=<%= if provider.configured, do: "[SET]", else: "[NOT SET]" %>
-<% end %>
+<%= for provider <- @providers do %><%= provider.env_key %>=<%= if provider.configured, do: "[SET]", else: "[NOT SET]" %><% end %>
 
 # Optional features
 FOSM_LOG_STRATEGY=<%= System.get_env("FOSM_LOG_STRATEGY") || "async" %>
@@ -291,4 +291,5 @@ FOSM_ENABLE_AGENT=<%= System.get_env("FOSM_ENABLE_AGENT") || "true" %></code></p
   defp schedule_refresh do
     Process.send_after(self(), :refresh, @refresh_interval)
   end
+end
 end

@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.WebhooksLive do
   @moduledoc """
   Webhook management LiveView.
@@ -49,7 +50,7 @@ defmodule FosmWeb.Admin.WebhooksLive do
           webhook = Repo.get(WebhookSubscription, params["id"])
           if webhook do
             changeset = WebhookSubscription.changeset(webhook, %{})
-            assign(socket, :form_changeset, changeset, :editing_webhook, webhook)
+            assign(socket, form_changeset: changeset, editing_webhook: webhook)
           else
             push_navigate(socket, to: ~p"/fosm/admin/webhooks")
           end
@@ -371,4 +372,5 @@ defmodule FosmWeb.Admin.WebhooksLive do
       true -> Calendar.strftime(datetime, "%Y-%m-%d")
     end
   end
+end
 end

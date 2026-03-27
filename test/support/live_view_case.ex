@@ -22,6 +22,9 @@ defmodule Fosm.LiveViewCase do
 
   use ExUnit.CaseTemplate
 
+  # Import LiveView testing helpers at module level
+  import Phoenix.LiveViewTest
+
   using do
     quote do
       # Import LiveView testing helpers

@@ -226,17 +226,32 @@ defmodule Fosm.Lifecycle.Implementation do
     current_state = record.state |> String.to_atom()
 
     event_def = Definition.find_event(lifecycle, event_name)
-    return false unless event_def
 
-    current_state_def = Definition.find_state(lifecycle, current_state)
-    return false if current_state_def && current_state_def.terminal
-    return false unless EventDefinition.valid_from?(event_def, current_state)
+    cond do
+      # Event doesn't exist
+      is_nil(event_def) ->
+        false
 
-    # Check guards
-    guards = get_guards_for_event(lifecycle, event_name)
-    Enum.all?(guards, fn guard ->
-      GuardDefinition.evaluate(guard, record) == :ok
-    end)
+      true ->
+        current_state_def = Definition.find_state(lifecycle, current_state)
+
+        cond do
+          # Terminal state blocks all transitions
+          current_state_def && current_state_def.terminal ->
+            false
+
+          # Invalid from state
+          not EventDefinition.valid_from?(event_def, current_state) ->
+            false
+
+          true ->
+            # Check guards
+            guards = get_guards_for_event(lifecycle, event_name)
+            Enum.all?(guards, fn guard ->
+              GuardDefinition.evaluate(guard, record) == :ok
+            end)
+        end
+    end
   end
 
   @doc """
@@ -256,7 +271,7 @@ defmodule Fosm.Lifecycle.Implementation do
     lifecycle = module.fosm_lifecycle()
     current_state = record.state |> String.to_atom()
 
-    result = %{
+    base_result = %{
       can_fire: true,
       event: event_name,
       current_state: current_state,
@@ -270,30 +285,30 @@ defmodule Fosm.Lifecycle.Implementation do
 
     # Check event exists
     event_def = Definition.find_event(lifecycle, event_name)
-    unless event_def do
-      return %{result |
+    if is_nil(event_def) do
+      return_result(%{base_result |
         can_fire: false,
         reason: "Unknown event '#{event_name}'"
-      }
+      })
     end
 
     # Check terminal state
     current_state_def = Definition.find_state(lifecycle, current_state)
     if current_state_def && current_state_def.terminal do
-      return %{result |
+      return_result(%{base_result |
         can_fire: false,
         reason: "State '#{current_state}' is terminal and cannot transition further",
         is_terminal: true
-      }
+      })
     end
 
     # Check valid from state
     unless EventDefinition.valid_from?(event_def, current_state) do
-      return %{result |
+      return_result(%{base_result |
         can_fire: false,
         reason: "Cannot fire '#{event_name}' from '#{current_state}' (valid from: #{inspect(event_def.from_states)})",
         valid_from_states: event_def.from_states
-      }
+      })
     end
 
     # Evaluate guards with detailed results
@@ -310,16 +325,19 @@ defmodule Fosm.Lifecycle.Implementation do
       reason = "Guard '#{first_failure.name}' failed"
       reason = if first_failure.reason, do: "#{reason}: #{first_failure.reason}", else: reason
 
-      %{result |
+      return_result(%{base_result |
         can_fire: false,
         failed_guards: Enum.reverse(failed),
         passed_guards: Enum.reverse(passed),
         reason: reason
-      }
+      })
     else
-      result
+      return_result(base_result)
     end
   end
+
+  # Helper to return result (just returns the value, for clarity)
+  defp return_result(result), do: result
 
   @doc """
   Returns all events that can be fired from the record's current state.
@@ -335,16 +353,17 @@ defmodule Fosm.Lifecycle.Implementation do
 
     # Terminal states have no available events
     current_state_def = Definition.find_state(lifecycle, current_state)
-    if current_state_def && current_state_def.terminal do
-      return []
-    end
 
-    lifecycle.events
-    |> Enum.filter(fn event ->
-      EventDefinition.valid_from?(event, current_state) &&
-      guards_pass?(lifecycle, event, record)
-    end)
-    |> Enum.map(& &1.name)
+    if current_state_def && current_state_def.terminal do
+      []
+    else
+      lifecycle.events
+      |> Enum.filter(fn event ->
+        EventDefinition.valid_from?(event, current_state) &&
+        guards_pass?(lifecycle, event, record)
+      end)
+      |> Enum.map(& &1.name)
+    end
   end
 
   # Private helper functions
@@ -446,7 +465,7 @@ defmodule Fosm.Lifecycle.Implementation do
     end
   end
 
-  defp should_snapshot?(snapshot_config, event_def, to_state_terminal) do
+  defp should_snapshot?(snapshot_config, _event_def, to_state_terminal) do
     # For now, simplified check. Full implementation tracks transition counts and time
     case snapshot_config.strategy do
       :every -> true
@@ -456,7 +475,7 @@ defmodule Fosm.Lifecycle.Implementation do
     end
   end
 
-  defp determine_snapshot_reason(snapshot_config, to_state_terminal) do
+  defp determine_snapshot_reason(snapshot_config, _to_state_terminal) do
     case snapshot_config.strategy do
       :every -> "every"
       :terminal -> "terminal"
@@ -503,7 +522,7 @@ defmodule Fosm.Lifecycle.Implementation do
     end
   end
 
-  defp handle_async_logging(log_data) do
+  defp handle_async_logging(_log_data) do
     strategy = async_logging_strategy()
 
     case strategy do
@@ -522,7 +541,7 @@ defmodule Fosm.Lifecycle.Implementation do
     end
   end
 
-  defp queue_webhooks(log_data) do
+  defp queue_webhooks(_log_data) do
     # TODO: Queue webhook delivery jobs (task-13)
     :ok
   end
@@ -535,7 +554,7 @@ defmodule Fosm.Lifecycle.Implementation do
     Fosm.config()[:transition_log_strategy]
   end
 
-  defp create_transition_log(log_data) do
+  defp create_transition_log(_log_data) do
     # TODO: Create transition log entry (depends on task-4 for schema)
     :ok
   end

@@ -30,7 +30,7 @@ defmodule Fosm.Lifecycle.EventDefinition do
   end
 
   def add_side_effect(%__MODULE__{side_effects: effects} = event, effect) do
-    %{event | side_effects: [effect | side_effects]}
+    %{event | side_effects: [effect | effects]}
   end
 
   def valid_from?(%__MODULE__{from_states: from_states}, state) do
@@ -192,7 +192,7 @@ defmodule Fosm.Lifecycle.Definition do
   def available_events_from(%__MODULE__{} = lifecycle, state) do
     lifecycle.events
     |> Enum.filter(fn event ->
-      EventDefinition.valid_from?(event, state) and
+      Fosm.Lifecycle.EventDefinition.valid_from?(event, state) and
         not is_terminal?(lifecycle, state)
     end)
     |> Enum.map(& &1.name)

@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.AgentExplorerLive do
   @moduledoc """
   LiveView for direct tool testing and exploration.
@@ -568,7 +569,7 @@ defmodule FosmWeb.Admin.AgentExplorerLive do
     
     lifecycle.events
     |> Enum.filter(fn e -> 
-      Definition.EventDefinition.valid_from?(e, record.state)
+      Fosm.Lifecycle.EventDefinition.valid_from?(e, record.state)
     end)
     |> Enum.map(fn e -> 
       %{event: e.name, from: e.from_states, to: e.to_state}
@@ -584,4 +585,5 @@ defmodule FosmWeb.Admin.AgentExplorerLive do
   defp format_error(%Fosm.Errors.AccessDenied{}), do: "Access denied"
   defp format_error(e) when is_binary(e), do: e
   defp format_error(e), do: Exception.message(e)
+end
 end

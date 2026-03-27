@@ -22,6 +22,7 @@ defmodule Fosm.Assertions do
   """
 
   import ExUnit.Assertions
+  require Ecto.Query
 
   # ============================================================================
   # State Transition Assertions
@@ -45,9 +46,11 @@ defmodule Fosm.Assertions do
 
     # Verify via transition log if repo available
     if via && Process.whereis(Fosm.Repo) do
+      record_id_str = to_string(record.id)
+      via_str = to_string(via)
       logs = Fosm.TransitionLog
-        |> Ecto.Query.where(record_id: ^to_string(record.id))
-        |> Ecto.Query.where(event_name: ^to_string(via))
+        |> Ecto.Query.where(record_id: ^record_id_str)
+        |> Ecto.Query.where(event_name: ^via_str)
         |> Fosm.Repo.all()
 
       assert length(logs) > 0,
@@ -314,12 +317,30 @@ defmodule Fosm.Assertions do
     from = Keyword.get(opts, :from)
     to = Keyword.get(opts, :to)
 
+    record_id_str = to_string(record.id)
     query = Fosm.TransitionLog
-      |> Ecto.Query.where(record_id: ^to_string(record.id))
+      |> Ecto.Query.where(record_id: ^record_id_str)
 
-    query = if event, do: Ecto.Query.where(query, event_name: ^to_string(event)), else: query
-    query = if from, do: Ecto.Query.where(query, from_state: ^to_string(from)), else: query
-    query = if to, do: Ecto.Query.where(query, to_state: ^to_string(to)), else: query
+    query = if event do
+      event_str = to_string(event)
+      Ecto.Query.where(query, event_name: ^event_str)
+    else
+      query
+    end
+    
+    query = if from do
+      from_str = to_string(from)
+      Ecto.Query.where(query, from_state: ^from_str)
+    else
+      query
+    end
+    
+    query = if to do
+      to_str = to_string(to)
+      Ecto.Query.where(query, to_state: ^to_str)
+    else
+      query
+    end
 
     if actor do
       actor_type = actor.__struct__ |> to_string()
@@ -409,10 +430,14 @@ defmodule Fosm.Assertions do
       fun.()
       flunk("Expected #{inspect(error_module)} to be raised")
     rescue
-      e in ^error_module ->
-        message = Exception.message(e)
-        assert message =~ pattern,
-          "Expected error message to match #{inspect(pattern)}, but got: #{message}"
+      e in _ ->
+        if e.__struct__ == error_module do
+          message = Exception.message(e)
+          assert message =~ pattern,
+            "Expected error message to match #{inspect(pattern)}, but got: #{message}"
+        else
+          reraise e, __STACKTRACE__
+        end
     end
   end
 

@@ -12,13 +12,13 @@ defmodule <%= @module %> do
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
-    <%= @resource_path %> = get_<%= @resource_path %>!(id)
+    resource = get_resource!(id)
 
     {:ok, assign(socket,
-      page_title: "<%= @resource_name %> #{<%= @resource_path %>.id}",
-      <%= @resource_path %>: <%= @resource_path %>,
-      available_events: <%= @schema_module %>.available_events(<%= @resource_path %>),
-      transition_history: get_transition_history(<%= @resource_path %>),
+      page_title: "<%= @resource_name %> \#{resource.id}",
+      resource: resource,
+      available_events: <%= @schema_module %>.available_events(resource),
+      transition_history: get_transition_history(resource),
       firing_event: nil,
       event_result: nil
     )}
@@ -39,16 +39,16 @@ defmodule <%= @module %> do
 
   @impl true
   def handle_event("fire_event", %{"event" => event_name}, socket) do
-    <%= @resource_path %> = socket.assigns.<%= @resource_path %>
+    resource = socket.assigns.resource
     event = String.to_atom(event_name)
     actor = socket.assigns[:current_user] || :system
 
     socket = assign(socket, firing_event: event_name)
 
-    case <%= @schema_module %>.fire!(<%= @resource_path %>, event, actor: actor) do
+    case <%= @schema_module %>.fire!(resource, event, actor: actor) do
       {:ok, updated} ->
         {:noreply, assign(socket,
-          <%= @resource_path %>: updated,
+          resource: updated,
           available_events: <%= @schema_module %>.available_events(updated),
           transition_history: get_transition_history(updated),
           firing_event: nil,
@@ -78,13 +78,13 @@ defmodule <%= @module %> do
             ← Back to <%= @plural %>
           </.link>
           <h1 class="text-2xl font-bold mt-2">
-            <%= @resource_name %> <%= @<%= @resource_path %>.id %>
+            <%= @resource_name %> \#{@resource.id}
           </h1>
-          <.badge color={state_color(@<%= @resource_path %>.state)} class="mt-2">
-            <%= @<%= @resource_path %>.state %>
+          <.badge color={state_color(@resource.state)} class="mt-2">
+            \#{@resource.state}
           </.badge>
         </div>
-        <.link patch={~p"/<%= @plural %>/#{@<%= @resource_path %>.id}/edit"} class="btn-secondary">
+        <.link patch={~p"/<%= @plural %>/\#{@resource.id}/edit"} class="btn-secondary">
           Edit
         </.link>
       </div>
@@ -100,7 +100,7 @@ defmodule <%= @module %> do
             <div>
               <%= if @event_result.success do %>
                 <p>✅ Event <strong><%= @event_result.event %></strong> fired successfully!</p>
-                <p class="text-sm mt-1">New state: <strong><%= @<%= @resource_path %>.state %></strong></p>
+                <p class="text-sm mt-1">New state: <strong>\#{@resource.state}</strong></p>
               <% else %>
                 <p>❌ Event failed: <%= @event_result.error %></p>
               <% end %>
@@ -116,19 +116,20 @@ defmodule <%= @module %> do
         <dl class="grid grid-cols-2 gap-4">
           <div>
             <dt class="text-sm text-gray-600">ID</dt>
-            <dd class="font-medium"><%= @<%= @resource_path %>.id %></dd>
+            <dd class="font-medium">\#{@resource.id}</dd>
           </div>
-<%= for {name, _type} <- @fields do %>          <div>
+<%= for {name, _type} <- @fields do %>
+          <div>
             <dt class="text-sm text-gray-600"><%= name |> to_string() |> Macro.camelize() %></dt>
-            <dd class="font-medium"><%= @<%= @resource_path %>.<%= name %> %></dd>
+            <dd class="font-medium">\#{@resource.<%= name %>}</dd>
           </div>
 <% end %>          <div>
             <dt class="text-sm text-gray-600">Created</dt>
-            <dd class="font-medium"><%= @<%= @resource_path %>.inserted_at %></dd>
+            <dd class="font-medium">\#{@resource.inserted_at}</dd>
           </div>
           <div>
             <dt class="text-sm text-gray-600">Updated</dt>
-            <dd class="font-medium"><%= @<%= @resource_path %>.updated_at %></dd>
+            <dd class="font-medium">\#{@resource.updated_at}</dd>
           </div>
         </dl>
       </div>
@@ -137,10 +138,7 @@ defmodule <%= @module %> do
       <div class="bg-white rounded-lg shadow p-6">
         <h2 class="text-lg font-semibold mb-4">Available Actions</h2>
         <%= if @available_events == [] do %>
-          <p class="text-gray-600 italic">No events available from <%= @<%= @resource_path %>.state %> state.</p>
-          <%= if <%= @schema_module %>.terminal_state?(@<%= @resource_path %>) do %>
-            <p class="text-sm text-gray-500 mt-2">This record is in a terminal state and cannot transition further.</p>
-          <% end %>
+          <p class="text-gray-600 italic">No events available from \#{@resource.state} state.</p>
         <% else %>
           <div class="flex flex-wrap gap-2">
             <%= for event <- @available_events do %>
@@ -168,37 +166,35 @@ defmodule <%= @module %> do
           <p class="text-gray-600 italic">No transitions recorded yet.</p>
         <% else %>
           <.table id="transitions" rows={@transition_history}>
-            <:col :let={t} label="Event"><%= t.event_name %></:col>
-            <:col :let={t} label="From"><%= t.from_state %></:col>
-            <:col :let={t} label="To"><%= t.to_state %></:col>
-            <:col :let={t} label="Actor"><%= t.actor_label || t.actor_type %></:col>
-            <:col :let={t} label="Time"><%= t.created_at %></:col>
+            <:col :let={t} label="Event">\#{t.event_name}</:col>
+            <:col :let={t} label="From">\#{t.from_state}</:col>
+            <:col :let={t} label="To">\#{t.to_state}</:col>
+            <:col :let={t} label="Actor">\#{t.actor_label || t.actor_type}</:col>
+            <:col :let={t} label="Time">\#{t.created_at}</:col>
           </.table>
         <% end %>
       </div>
     </div>
 
     <%!-- Edit Modal --%>
-    <.modal :if={@live_action == :edit} id="<%= @resource_path %>-modal" show on_cancel={JS.patch(~p"/<%= @plural %>/#{@<%= @resource_path %>.id}")}>
+    <.modal :if={@live_action == :edit} id="<%= @resource_path %>-modal" show on_cancel={JS.patch(~p"/<%= @plural %>/\#{@resource.id}")}>
       <.live_component
         module={<%= @live_form_module %>}
-        id={@<%= @resource_path %>.id}
+        id={@resource.id}
         title={@page_title}
         action={@live_action}
-        <%= @resource_path %>={@<%= @resource_path %>}
-        patch={~p"/<%= @plural %>/#{@<%= @resource_path %>.id}"}
+        resource={@resource}
+        patch={~p"/<%= @plural %>/\#{@resource.id}"}
       />
     </.modal>
     """
   end
 
-  defp get_<%= @resource_path %>!(id) do
-    Repo.get!(<%= @schema_module %>, id)
-  end
+  defp get_resource!(id), do: Repo.get!(<%= @schema_module %>, id)
 
-  defp get_transition_history(<%= @resource_path %>) do
+  defp get_transition_history(resource) do
     Fosm.TransitionLog
-    |> Fosm.TransitionLog.for_record("<%= @plural %>", <%= @resource_path %>.id)
+    |> Fosm.TransitionLog.for_record("<%= @plural %>", resource.id)
     |> Fosm.TransitionLog.recent()
     |> Repo.all()
   end

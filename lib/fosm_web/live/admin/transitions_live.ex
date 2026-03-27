@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.TransitionsLive do
   @moduledoc """
   Transitions LiveView with filtering and pagination.
@@ -313,4 +314,5 @@ defmodule FosmWeb.Admin.TransitionsLive do
       true -> format_datetime(datetime)
     end
   end
+end
 end

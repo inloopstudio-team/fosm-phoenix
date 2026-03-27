@@ -139,11 +139,11 @@ defmodule Fosm.Current do
           end
 
         # Combine type-level and record-level roles
-        type_roles = get_in(actor_data, [resource_type, nil]) || []
+        type_roles = nested_get(actor_data, [resource_type, nil]) || []
 
         record_roles =
           if record_id do
-            get_in(actor_data, [resource_type, to_string(record_id)]) || []
+            nested_get(actor_data, [resource_type, to_string(record_id)]) || []
           else
             []
           end
@@ -232,7 +232,7 @@ defmodule Fosm.Current do
 
       cache
       |> Map.put_new(type, %{})
-      |> update_in([type, id], fn existing ->
+      |> nested_update([type, id], fn existing ->
         [role | (existing || [])]
       end)
     end)
@@ -256,7 +256,7 @@ defmodule Fosm.Current do
   end
 
   # Safe nested map access
-  defp get_in(map, keys) when is_map(map) and is_list(keys) do
+  defp nested_get(map, keys) when is_map(map) and is_list(keys) do
     Enum.reduce(keys, map, fn key, acc ->
       case acc do
         nil -> nil
@@ -266,10 +266,10 @@ defmodule Fosm.Current do
     end)
   end
 
-  defp get_in(_map, _keys), do: nil
+  defp nested_get(_map, _keys), do: nil
 
   # Nested map update helper
-  defp update_in(map, keys, fun) when is_map(map) and is_list(keys) do
+  defp nested_update(map, keys, fun) when is_map(map) and is_list(keys) do
     do_update_in(map, keys, fun)
   end
 

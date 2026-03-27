@@ -1,0 +1,40 @@
+#!/bin/sh
+# FOSM Phoenix pre-commit hook
+# Runs formatter, credo, and compiler checks
+
+echo "🔍 Running pre-commit checks..."
+
+# Store the exit status
+EXIT_STATUS=0
+
+# Check formatting
+echo "📐 Checking formatting..."
+mix format --check-formatted
+if [ $? -ne 0 ]; then
+    echo "❌ Formatting issues found. Run 'mix format' to fix."
+    EXIT_STATUS=1
+fi
+
+# Run Credo in strict mode
+echo "🔎 Running Credo (strict mode)..."
+mix credo --strict
+if [ $? -ne 0 ]; then
+    echo "❌ Credo found issues."
+    EXIT_STATUS=1
+fi
+
+# Check for compiler warnings
+echo "🔨 Checking for compiler warnings..."
+mix compile --warnings-as-errors
+if [ $? -ne 0 ]; then
+    echo "❌ Compiler warnings found."
+    EXIT_STATUS=1
+fi
+
+if [ $EXIT_STATUS -eq 0 ]; then
+    echo "✅ All pre-commit checks passed!"
+else
+    echo "🚫 Pre-commit checks failed. Please fix the issues above."
+fi
+
+exit $EXIT_STATUS

@@ -11,25 +11,34 @@ defmodule Fosm.WebhookSubscription do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "fosm_webhook_subscriptions" do
-    field :url, :string, null: false
-    field :events, {:array, :string}, default: []
-    field :record_type, :string
-    field :record_id, :string
-    field :secret_token, :string
-    field :active, :boolean, default: true
-    field :delivery_mode, :string, default: "async"
-    field :retry_count, :integer, default: 0
-    field :last_delivery_at, :utc_datetime
-    field :last_delivery_status, :string
-    field :metadata, :map, default: %{}
+    field(:url, :string)
+    field(:events, {:array, :string}, default: [])
+    field(:record_type, :string)
+    field(:record_id, :string)
+    field(:secret_token, :string)
+    field(:active, :boolean, default: true)
+    field(:delivery_mode, :string, default: "async")
+    field(:retry_count, :integer, default: 0)
+    field(:last_delivery_at, :utc_datetime)
+    field(:last_delivery_status, :string)
+    field(:metadata, :map, default: %{})
 
     timestamps(type: :utc_datetime)
   end
 
   @required_fields [:url]
-  @optional_fields [:events, :record_type, :record_id, :secret_token, :active, 
-                    :delivery_mode, :retry_count, :last_delivery_at, 
-                    :last_delivery_status, :metadata]
+  @optional_fields [
+    :events,
+    :record_type,
+    :record_id,
+    :secret_token,
+    :active,
+    :delivery_mode,
+    :retry_count,
+    :last_delivery_at,
+    :last_delivery_status,
+    :metadata
+  ]
 
   @doc """
   Creates a changeset for a new webhook subscription.
@@ -53,7 +62,7 @@ defmodule Fosm.WebhookSubscription do
 
   defp validate_events(changeset) do
     events = get_field(changeset, :events) || []
-    
+
     if events == [] do
       # Empty events means subscribe to all - valid
       changeset
@@ -108,9 +117,16 @@ defmodule Fosm.WebhookSubscription do
   - Explicitly include this event
   """
   def for_event(query \\ __MODULE__, event_name) do
-    where(query, [s],
-      fragment("? = ANY(?) OR array_length(?, 1) IS NULL OR array_length(?, 1) = 0",
-        ^to_string(event_name), s.events, s.events, s.events)
+    where(
+      query,
+      [s],
+      fragment(
+        "? = ANY(?) OR array_length(?, 1) IS NULL OR array_length(?, 1) = 0",
+        ^to_string(event_name),
+        s.events,
+        s.events,
+        s.events
+      )
     )
   end
 
@@ -125,9 +141,7 @@ defmodule Fosm.WebhookSubscription do
   Scope: Filter by specific record.
   """
   def for_record(query \\ __MODULE__, record_type, record_id) do
-    where(query, [s],
-      s.record_type == ^record_type and s.record_id == ^to_string(record_id)
-    )
+    where(query, [s], s.record_type == ^record_type and s.record_id == ^to_string(record_id))
   end
 
   @doc """
@@ -196,7 +210,7 @@ defmodule Fosm.WebhookSubscription do
     |> changeset(%{
       last_delivery_at: DateTime.utc_now(),
       last_delivery_status: status,
-      retry_count: subscription.retry_count + (if status == "success", do: 0, else: 1)
+      retry_count: subscription.retry_count + if(status == "success", do: 0, else: 1)
     })
     |> Fosm.Repo.update!()
   end

@@ -6,12 +6,30 @@ defmodule <%= @app_module %>.Repo.Migrations.Create<%= Macro.camelize(@plural) %
 <%= if @binary_id do %>      add :id, :binary_id, primary_key: true
 <% end %>
       # FOSM state field (required)
-      add :state, :string, null: false, default: "<%= if @states != [], do: Enum.find(@states, &(&1.type == :initial))[:name], else: "draft" %>"
+      add :state, :string, null: false, default: "<%= Enum.find(@states, &(&1.type == :initial))[:name] || "draft" %>"
 
       # FOSM metadata for extensibility
       add :fosm_metadata, :map, default: %{}
 
-<%= for {name, type} <- @fields do %><%= render_field(name, type) %>
+<%= for {name, type} <- @fields do %><%= case type do
+  :string -> "      add #{inspect(name)}, :string, null: false"
+  :text -> "      add #{inspect(name)}, :text, null: false"
+  :integer -> "      add #{inspect(name)}, :integer, null: false"
+  :float -> "      add #{inspect(name)}, :float, null: false"
+  :decimal -> "      add #{inspect(name)}, :decimal, null: false"
+  :boolean -> "      add #{inspect(name)}, :boolean, null: false"
+  :date -> "      add #{inspect(name)}, :date, null: false"
+  :time -> "      add #{inspect(name)}, :time, null: false"
+  :datetime -> "      add #{inspect(name)}, :utc_datetime, null: false"
+  :naive_datetime -> "      add #{inspect(name)}, :naive_datetime, null: false"
+  :utc_datetime -> "      add #{inspect(name)}, :utc_datetime, null: false"
+  :uuid -> "      add #{inspect(name)}, :uuid, null: false"
+  :binary -> "      add #{inspect(name)}, :binary, null: false"
+  :map -> "      add #{inspect(name)}, :map, null: false"
+  :array -> "      add #{inspect(name)}, {:array, :string}, null: false"
+  :references -> "      add #{inspect(name)}, :integer"
+  other -> "      add #{inspect(name)}, #{inspect(other)}, null: false"
+end %>
 <% end %>
       timestamps()
     end
@@ -23,44 +41,5 @@ defmodule <%= @app_module %>.Repo.Migrations.Create<%= Macro.camelize(@plural) %
 
     # Composite indexes for common query patterns
     create index(:<%= @plural %>, [:state, :inserted_at])
-  end
-
-<%= for {name, type} <- @fields do %><%= case type do
-  :references ->
-    """
-    # Add foreign key constraint (optional)
-    # create index(:#{@plural}, [:#{name}])
-    # alter table(:#{@plural}) do
-    #   modify :#{name}, references(:other_table, on_delete: :nothing)
-    # end
-    """
-  _ -> ""
-end %><% end %>
-  # Helper to render field definitions
-  defp render_field(name, type) do
-    type_def = case type do
-      :string -> ":string"
-      :text -> ":text"
-      :integer -> ":integer"
-      :float -> ":float"
-      :decimal -> ":decimal"
-      :boolean -> ":boolean"
-      :date -> ":date"
-      :time -> ":time"
-      :datetime -> ":utc_datetime"
-      :naive_datetime -> ":naive_datetime"
-      :utc_datetime -> ":utc_datetime"
-      :uuid -> ":uuid"
-      :binary -> ":binary"
-      :map -> ":map"
-      :array -> "{:array, :string}"
-      {:array, inner} -> "{:array, #{inner}}"
-      :references -> ":integer"
-      other -> inspect(other)
-    end
-
-    nullable = if type in [:references], do: "", else: ", null: false"
-
-    "      add #{inspect(name)}, #{type_def}#{nullable}"
   end
 end

@@ -333,7 +333,7 @@ defmodule Mix.Tasks.Fosm.Graph.Generate do
         case state.type do
           :initial -> "#{state.name}([#{state.name}])"
           :terminal -> "#{state.name}([#{state.name}])"
-          _ -> "#{state_name}"
+          _ -> "#{state.name}"
         end
       end)
 

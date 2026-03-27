@@ -26,14 +26,15 @@ defmodule Fosm.RoleAssignment do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "fosm_role_assignments" do
-    field :user_type, :string
-    field :user_id, :string
-    field :resource_type, :string
-    field :resource_id, :string  # nil for type-level roles
-    field :role_name, :string
-    field :granted_by_type, :string
-    field :granted_by_id, :string
-    field :expires_at, :utc_datetime
+    field(:user_type, :string)
+    field(:user_id, :string)
+    field(:resource_type, :string)
+    # nil for type-level roles
+    field(:resource_id, :string)
+    field(:role_name, :string)
+    field(:granted_by_type, :string)
+    field(:granted_by_id, :string)
+    field(:expires_at, :utc_datetime)
 
     timestamps(type: :utc_datetime)
   end
@@ -75,7 +76,8 @@ defmodule Fosm.RoleAssignment do
     query = from(ra in query, where: ra.resource_type == ^resource_type)
 
     if resource_id do
-      from(ra in query, where: ra.resource_id == ^to_string(resource_id))
+      resource_id_str = to_string(resource_id)
+      from(ra in query, where: ra.resource_id == ^resource_id_str)
     else
       from(ra in query, where: is_nil(ra.resource_id))
     end
@@ -85,7 +87,8 @@ defmodule Fosm.RoleAssignment do
   Scope: Get assignments for a specific role.
   """
   def for_role(query \\ __MODULE__, role_name) do
-    from(ra in query, where: ra.role_name == ^to_string(role_name))
+    role_name_str = to_string(role_name)
+    from(ra in query, where: ra.role_name == ^role_name_str)
   end
 
   @doc """

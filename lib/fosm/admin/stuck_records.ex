@@ -79,35 +79,35 @@ defmodule Fosm.Admin.StuckRecords do
 
     # Short-circuit if no states to check
     if states_to_check == [] do
-      return []
+      []
+    else
+      # Get records in non-terminal states
+      base_query =
+        from(r in module,
+          where: r.state in ^states_to_check
+        )
+
+      base_query = if limit, do: limit(base_query, ^limit), else: base_query
+
+      candidates = Fosm.Repo.all(base_query)
+
+      # Check which have recent transitions (efficient batch query)
+      candidate_ids = Enum.map(candidates, & &1.id)
+
+      # Edge case: no candidates
+      if candidate_ids == [] do
+        []
+      else
+        # Get IDs of recently active records in ONE query
+        recently_active_ids =
+          get_recently_active_ids(module, candidate_ids, stale_days)
+
+        # Return records NOT in recently_active
+        Enum.reject(candidates, fn r ->
+          to_string(r.id) in recently_active_ids
+        end)
+      end
     end
-
-    # Get records in non-terminal states
-    base_query =
-      from(r in module,
-        where: r.state in ^states_to_check
-      )
-
-    base_query = if limit, do: limit(base_query, ^limit), else: base_query
-
-    candidates = Fosm.Repo.all(base_query)
-
-    # Check which have recent transitions (efficient batch query)
-    candidate_ids = Enum.map(candidates, & &1.id)
-
-    # Edge case: no candidates
-    if candidate_ids == [] do
-      return []
-    end
-
-    # Get IDs of recently active records in ONE query
-    recently_active_ids =
-      get_recently_active_ids(module, candidate_ids, stale_days)
-
-    # Return records NOT in recently_active
-    Enum.reject(candidates, fn r ->
-      to_string(r.id) in recently_active_ids
-    end)
   end
 
   @doc """

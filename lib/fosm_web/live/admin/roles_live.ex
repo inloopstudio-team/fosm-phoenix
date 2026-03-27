@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.RolesLive do
   @moduledoc """
   Roles management LiveView.
@@ -533,4 +534,5 @@ defmodule FosmWeb.Admin.RolesLive do
       true -> Calendar.strftime(datetime, "%Y-%m-%d")
     end
   end
+end
 end

@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.Components do
   @moduledoc """
   Reusable UI components for the FOSM Admin interface.
@@ -390,4 +391,5 @@ defmodule FosmWeb.Admin.Components do
     </button>
     """
   end
+end
 end

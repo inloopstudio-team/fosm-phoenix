@@ -262,7 +262,9 @@ defmodule Fosm.Registry do
     _ -> false
   end
   
-  defp discover_fosm_modules([]), do: []
+  # Note: discover_fosm_modules is reserved for future auto-discovery
+  # Currently models are explicitly configured
+  # defp discover_fosm_modules([]), do: []
   
   defp discover_fosm_models(modules) when is_list(modules) do
     Enum.flat_map(modules, fn module ->

@@ -23,26 +23,27 @@ defmodule Fosm.AccessEvent do
 
   @primary_key {:id, :binary_id, autogenerate: true}
   schema "fosm_access_events" do
-    field :action, :string  # grant, revoke, auto_grant, auto_revoke
+    # grant, revoke, auto_grant, auto_revoke
+    field(:action, :string)
 
     # Subject (who received/lost the role)
-    field :user_type, :string
-    field :user_id, :string
-    field :user_label, :string
+    field(:user_type, :string)
+    field(:user_id, :string)
+    field(:user_label, :string)
 
     # Resource
-    field :resource_type, :string
-    field :resource_id, :string
+    field(:resource_type, :string)
+    field(:resource_id, :string)
 
     # Role
-    field :role_name, :string
+    field(:role_name, :string)
 
     # Actor (who performed the action)
-    field :performed_by_type, :string
-    field :performed_by_id, :string
+    field(:performed_by_type, :string)
+    field(:performed_by_id, :string)
 
     # Metadata
-    field :metadata, :map, default: %{}
+    field(:metadata, :map, default: %{})
 
     timestamps(type: :utc_datetime, updated_at: false)
   end
@@ -97,9 +98,10 @@ defmodule Fosm.AccessEvent do
   Scope: Events for a specific resource.
   """
   def for_resource(query \\ __MODULE__, resource_type, resource_id) do
+    resource_id_str = to_string(resource_id)
     from(e in query,
       where: e.resource_type == ^resource_type,
-      where: e.resource_id == ^to_string(resource_id)
+      where: e.resource_id == ^resource_id_str
     )
   end
 
@@ -107,14 +109,16 @@ defmodule Fosm.AccessEvent do
   Scope: Events for a specific role.
   """
   def for_role(query \\ __MODULE__, role_name) do
-    from(e in query, where: e.role_name == ^to_string(role_name))
+    role_name_str = to_string(role_name)
+    from(e in query, where: e.role_name == ^role_name_str)
   end
 
   @doc """
   Scope: Events by action type.
   """
   def by_action(query \\ __MODULE__, action) do
-    from(e in query, where: e.action == ^to_string(action))
+    action_str = to_string(action)
+    from(e in query, where: e.action == ^action_str)
   end
 
   @doc """

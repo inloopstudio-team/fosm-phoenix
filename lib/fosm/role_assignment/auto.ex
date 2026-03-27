@@ -31,8 +31,12 @@ defmodule Fosm.RoleAssignment.Auto do
 
   require Logger
 
+  import Ecto.Query
+
   alias Fosm.RoleAssignment
   alias Fosm.Current
+  
+  import Ecto.Query
 
   # ============================================================================
   # Public API
@@ -68,7 +72,7 @@ defmodule Fosm.RoleAssignment.Auto do
     default_roles = get_default_roles(lifecycle)
 
     if default_roles == [] do
-      return {:ok, :no_default_roles}
+      {:ok, :no_default_roles}
     end
 
     # Try to find the creator from various associations
@@ -78,7 +82,7 @@ defmodule Fosm.RoleAssignment.Auto do
 
     if is_nil(creator) do
       Logger.debug("[Fosm] No creator found for #{module}:#{record.id}, skipping auto role assignment")
-      return {:ok, :no_creator}
+      {:ok, :no_creator}
     end
 
     # Assign each default role
@@ -163,15 +167,18 @@ defmodule Fosm.RoleAssignment.Auto do
   def revoke_role(record, user, role_name) do
     module = record.__struct__
     {user_type, user_id} = extract_actor_identity(user)
+    resource_type = module.__schema__(:source)
+    resource_id_str = to_string(record.id)
+    role_name_str = to_string(role_name)
 
     # Find the assignment
     assignment =
       from(ra in RoleAssignment,
         where: ra.user_type == ^user_type,
         where: ra.user_id == ^user_id,
-        where: ra.resource_type == ^module.__schema__(:source),
-        where: ra.resource_id == ^to_string(record.id),
-        where: ra.role_name == ^to_string(role_name)
+        where: ra.resource_type == ^resource_type,
+        where: ra.resource_id == ^resource_id_str,
+        where: ra.role_name == ^role_name_str
       )
       |> Fosm.Repo.one()
 

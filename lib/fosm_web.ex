@@ -5,6 +5,11 @@ defmodule FosmWeb do
   This module defines the core Phoenix components used by the FOSM Admin UI.
   """
 
+  @doc """
+  Returns the list of static paths for FOSM web assets.
+  """
+  def static_paths, do: ~w(assets fonts images favicon.ico robots.txt)
+
   def html do
     quote do
       use Phoenix.Component
@@ -24,6 +29,11 @@ defmodule FosmWeb do
         layout: {FosmWeb.Layouts, :app}
 
       unquote(html_helpers())
+
+      # Enable verified routes for ~p sigil
+      use Phoenix.VerifiedRoutes,
+        endpoint: FosmWeb.Endpoint,
+        router: FosmWeb.Router
     end
   end
 
@@ -40,6 +50,12 @@ defmodule FosmWeb do
       use Phoenix.Router
 
       import Phoenix.LiveView.Router
+
+      # Enable verified routes
+      use Phoenix.VerifiedRoutes,
+        endpoint: FosmWeb.Endpoint,
+        router: FosmWeb.Router,
+        statics: FosmWeb.static_paths()
     end
   end
 
@@ -56,8 +72,6 @@ defmodule FosmWeb do
         layouts: [html: FosmWeb.Layouts]
 
       import Plug.Conn
-
-      unquote(verified_routes())
     end
   end
 

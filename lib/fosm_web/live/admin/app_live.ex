@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.AppLive do
   @moduledoc """
   App detail LiveView for viewing and managing a specific FOSM application.
@@ -345,4 +346,5 @@ defmodule FosmWeb.Admin.AppLive do
       true -> format_datetime(datetime)
     end
   end
+end
 end

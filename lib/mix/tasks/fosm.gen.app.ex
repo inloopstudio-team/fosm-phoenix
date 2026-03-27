@@ -152,20 +152,28 @@ defmodule Mix.Tasks.Fosm.Gen.App do
     # Generate paths and file names
     resource_path = Macro.underscore(resource_name)
     plural = Inflex.pluralize(resource_path)
-    schema_file = "lib/#{Macro.underscore(base_module)}/fosm/#{resource_path}.ex"
+    schema_file = "lib/#{base_module |> to_string() |> Macro.underscore()}/fosm/#{resource_path}.ex"
     migration_file = "priv/repo/migrations/#{timestamp()}_create_fosm_#{plural}.exs"
-    controller_file = if Keyword.get(opts, :controller, true) do
-      "lib/#{Macro.underscore(web_module)}/controllers/#{resource_path}_controller.ex"
-    end
-    live_index_file = if Keyword.get(opts, :live, true) do
-      "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/index.ex"
-    end
-    live_show_file = if Keyword.get(opts, :live, true) do
-      "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/show.ex"
-    end
-    live_form_file = if Keyword.get(opts, :live, true) do
-      "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/form_component.ex"
-    end
+
+    controller_file =
+      if Keyword.get(opts, :controller, true) do
+        "lib/#{Macro.underscore(web_module)}/controllers/#{resource_path}_controller.ex"
+      end
+
+    live_index_file =
+      if Keyword.get(opts, :live, true) do
+        "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/index.ex"
+      end
+
+    live_show_file =
+      if Keyword.get(opts, :live, true) do
+        "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/show.ex"
+      end
+
+    live_form_file =
+      if Keyword.get(opts, :live, true) do
+        "lib/#{Macro.underscore(web_module)}/live/#{resource_path}_live/form_component.ex"
+      end
 
     %{
       app_module: app_module,
@@ -178,13 +186,23 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       schema_file: schema_file,
       migration_file: migration_file,
       controller_file: controller_file,
-      controller_module: if(controller_file, do: Module.concat([web_module, :Controllers, resource_name <> "Controller"])),
+      controller_module:
+        if(controller_file,
+          do: Module.concat([web_module, :Controllers, resource_name <> "Controller"])
+        ),
       live_index_file: live_index_file,
       live_show_file: live_show_file,
       live_form_file: live_form_file,
-      live_index_module: if(live_index_file, do: Module.concat([web_module, :Live, resource_name <> "Live", :Index])),
-      live_show_module: if(live_show_file, do: Module.concat([web_module, :Live, resource_name <> "Live", :Show])),
-      live_form_module: if(live_form_file, do: Module.concat([web_module, :Live, resource_name <> "Live", :FormComponent])),
+      live_index_module:
+        if(live_index_file,
+          do: Module.concat([web_module, :Live, resource_name <> "Live", :Index])
+        ),
+      live_show_module:
+        if(live_show_file, do: Module.concat([web_module, :Live, resource_name <> "Live", :Show])),
+      live_form_module:
+        if(live_form_file,
+          do: Module.concat([web_module, :Live, resource_name <> "Live", :FormComponent])
+        ),
       fields: fields,
       states: states,
       access_roles: access_roles,
@@ -221,6 +239,7 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       end
     end)
   end
+
   defp parse_fields(nil), do: []
 
   defp parse_states(states_str) when is_binary(states_str) do
@@ -243,7 +262,9 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       end
     end)
   end
-  defp parse_states(nil), do: [%{name: :draft, type: :initial}, %{name: :completed, type: :terminal}]
+
+  defp parse_states(nil),
+    do: [%{name: :draft, type: :initial}, %{name: :completed, type: :terminal}]
 
   defp parse_access(access_str) when is_binary(access_str) do
     access_str
@@ -252,11 +273,20 @@ defmodule Mix.Tasks.Fosm.Gen.App do
     |> Enum.reject(&(&1 == ""))
     |> Enum.map(&String.to_atom/1)
   end
+
   defp parse_access(nil), do: []
 
   defp timestamp do
     {{year, month, day}, {hour, minute, second}} = :calendar.local_time()
-    :io_lib.format("~4..0B~2..0B~2..0B~2..0B~2..0B~2..0B", [year, month, day, hour, minute, second])
+
+    :io_lib.format("~4..0B~2..0B~2..0B~2..0B~2..0B~2..0B", [
+      year,
+      month,
+      day,
+      hour,
+      minute,
+      second
+    ])
     |> IO.iodata_to_binary()
   end
 
@@ -272,6 +302,7 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       states: ctx.states,
       access_roles: ctx.access_roles,
       binary_id: ctx.binary_id,
+      app_module: ctx.app_module,
       events: generate_default_events(ctx.states)
     ]
 
@@ -288,7 +319,9 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       resource_path: ctx.resource_path,
       plural: ctx.plural,
       fields: ctx.fields,
-      binary_id: ctx.binary_id
+      states: ctx.states,
+      binary_id: ctx.binary_id,
+      app_module: ctx.app_module
     ]
 
     template_path = template_path("migration.exs")
@@ -306,7 +339,9 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       resource_path: ctx.resource_path,
       plural: ctx.plural,
       resource_name: ctx.resource_name,
-      fields: ctx.fields
+      fields: ctx.fields,
+      app_module: ctx.app_module,
+      web_module: ctx.web_module
     ]
 
     template_path = template_path("controller.ex")
@@ -328,7 +363,13 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       plural: ctx.plural,
       resource_name: ctx.resource_name,
       fields: ctx.fields,
-      states: ctx.states
+      states: ctx.states,
+      app_module: ctx.app_module,
+      web_module: ctx.web_module,
+      # HEEx assigns - provided as placeholders
+      resource: nil,
+      selected_state: nil,
+      live_action: :index
     ]
 
     template_path = template_path("live_index.ex")
@@ -343,7 +384,18 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       plural: ctx.plural,
       resource_name: ctx.resource_name,
       fields: ctx.fields,
-      states: ctx.states
+      states: ctx.states,
+      app_module: ctx.app_module,
+      web_module: ctx.web_module,
+      live_form_module: ctx.live_form_module,
+      # HEEx assigns - provided as placeholders for template evaluation
+      available_events: [],
+      event_result: nil,
+      firing_event: nil,
+      live_action: :show,
+      page_title: "",
+      resource: nil,
+      transition_history: []
     ]
 
     template_path = template_path("live_show.ex")
@@ -356,7 +408,14 @@ defmodule Mix.Tasks.Fosm.Gen.App do
       schema_module: ctx.schema_module,
       resource_path: ctx.resource_path,
       resource_name: ctx.resource_name,
-      fields: ctx.fields
+      fields: ctx.fields,
+      states: ctx.states,
+      # HEEx assigns - provided as placeholders
+      resource: nil,
+      form: nil,
+      live_action: :new,
+      title: "",
+      action: :new
     ]
 
     template_path = template_path("live_form.ex")
@@ -367,27 +426,29 @@ defmodule Mix.Tasks.Fosm.Gen.App do
   defp update_router(ctx) do
     router_path = "lib/#{Macro.underscore(ctx.web_module)}/router.ex"
 
-    unless File.exists?(router_path) do
+    if File.exists?(router_path) do
+      router_content = File.read!(router_path)
+
+      # Generate the routes to add
+      routes = generate_routes(ctx)
+
+      # Check if we already have fosm routes scope
+      cond do
+        String.contains?(router_content, "scope \"/fosm\"") ->
+          inject_into_existing_fosm_scope(router_path, router_content, ctx, routes)
+
+        String.contains?(router_content, "scope\"") ->
+          inject_new_fosm_scope(router_path, router_content, ctx, routes)
+
+        true ->
+          Mix.shell().info(
+            "⚠️  Could not find appropriate location in router. Please add routes manually:"
+          )
+
+          Mix.shell().info(routes)
+      end
+    else
       Mix.shell().info("⚠️  Router file not found at #{router_path}. Skipping route injection.")
-      return
-    end
-
-    router_content = File.read!(router_path)
-
-    # Generate the routes to add
-    routes = generate_routes(ctx)
-
-    # Check if we already have fosm routes scope
-    cond do
-      String.contains?(router_content, "scope \"/fosm\"") ->
-        inject_into_existing_fosm_scope(router_path, router_content, ctx, routes)
-
-      String.contains?(router_content, "scope\"") ->
-        inject_new_fosm_scope(router_path, router_content, ctx, routes)
-
-      true ->
-        Mix.shell().info("⚠️  Could not find appropriate location in router. Please add routes manually:")
-        Mix.shell().info(routes)
     end
   end
 
@@ -403,11 +464,12 @@ defmodule Mix.Tasks.Fosm.Gen.App do
 
   defp inject_into_existing_fosm_scope(router_path, content, ctx, routes) do
     # Find the fosm scope and inject before its closing
-    new_content = Regex.replace(
-      ~r/(scope "\/fosm".*?do.*?)(\n\s*end)/s,
-      content,
-      "\\1\n      #{String.replace(routes, "\n", "\n      ")}\\2"
-    )
+    new_content =
+      Regex.replace(
+        ~r/(scope "\/fosm".*?do.*?)(\n\s*end)/s,
+        content,
+        "\\1\n      #{String.replace(routes, "\n", "\n      ")}\\2"
+      )
 
     File.write!(router_path, new_content)
     Mix.shell().info("✅ Added routes to existing /fosm scope in router.ex")
@@ -415,40 +477,42 @@ defmodule Mix.Tasks.Fosm.Gen.App do
 
   defp inject_new_fosm_scope(router_path, content, ctx, routes) do
     # Find the last scope block and add after it
-    new_content = Regex.replace(
-      ~r/(.*scope.*do.*end)(.*)/s,
-      content,
-      "\\1\n\n  # FOSM resources\n  scope \"/fosm\" do\n    pipe_through :browser\n\n    #{String.replace(routes, "\n", "\n    ")}\n  end\\2",
-      global: false
-    )
+    new_content =
+      Regex.replace(
+        ~r/(.*scope.*do.*end)(.*)/s,
+        content,
+        "\\1\n\n  # FOSM resources\n  scope \"/fosm\" do\n    pipe_through :browser\n\n    #{String.replace(routes, "\n", "\n    ")}\n  end\\2",
+        global: false
+      )
 
     File.write!(router_path, new_content)
     Mix.shell().info("✅ Created new /fosm scope in router.ex")
   end
 
+  @claude_sentinel "<!-- fosm:agent-instructions -->"
+
   defp inject_claude_instructions(ctx) do
     claude_md = Path.join(File.cwd!(), "CLAUDE.md")
-    sentinel = "<!-- fosm:agent-instructions -->"
 
     section = generate_claude_section(ctx)
 
-    if File.exists?(claude_md) && File.read!(claude_md) =~ sentinel do
-      Mix.shell().info("📄 CLAUDE.md already has FOSM instructions")
-      return
+    cond do
+      File.exists?(claude_md) && File.read!(claude_md) =~ @claude_sentinel ->
+        Mix.shell().info("📄 CLAUDE.md already has FOSM instructions")
+      
+      File.exists?(claude_md) ->
+        File.write!(claude_md, "\n" <> section, [:append])
+        Mix.shell().info("✅ Updated CLAUDE.md with FOSM instructions")
+      
+      true ->
+        File.write!(claude_md, "# CLAUDE.md\n\n" <> section)
+        Mix.shell().info("✅ Updated CLAUDE.md with FOSM instructions")
     end
-
-    if File.exists?(claude_md) do
-      File.write!(claude_md, "\n" <> section, [:append])
-    else
-      File.write!(claude_md, "# CLAUDE.md\n\n" <> section)
-    end
-
-    Mix.shell().info("✅ Updated CLAUDE.md with FOSM instructions")
   end
 
   defp generate_claude_section(ctx) do
     """
-    #{sentinel}
+    #{@claude_sentinel}
     ## FOSM (#{ctx.resource_path})
 
     This project uses `fosm-phoenix` — a Finite Object State Machine engine.
@@ -483,6 +547,7 @@ defmodule Mix.Tasks.Fosm.Gen.App do
   end
 
   defp example_fields([]), do: ""
+
   defp example_fields(fields) do
     fields
     |> Enum.map(fn {name, _} -> "#{name}: ..." end)
@@ -511,7 +576,7 @@ defmodule Mix.Tasks.Fosm.Gen.App do
         all_non_terminals = [initial | normals]
 
         events =
-          for i <- 0..(length(all_non_terminals)-2) do
+          for i <- 0..(length(all_non_terminals) - 2) do
             from = Enum.at(all_non_terminals, i)
             to = Enum.at(all_non_terminals, i + 1)
             %{name: String.to_atom("move_to_#{to}"), from: from, to: to}

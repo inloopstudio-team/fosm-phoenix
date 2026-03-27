@@ -15,15 +15,15 @@ defmodule Fosm.Jobs.WebhookDeliveryJob do
 
   require Logger
 
-  @type webhook_args :: %{
-    required("url") => String.t(),
-    required("payload") => map(),
-    required("event_name") => String.t(),
-    required("record_type") => String.t(),
-    optional("secret_token") => String.t() | nil,
-    optional("transition_id") => integer() | nil,
-    optional("webhook_id") => integer() | nil
-  }
+  # @type webhook_args :: %{
+  #         url: String.t(),
+  #         payload: map(),
+  #         event_name: String.t(),
+  #         record_type: String.t(),
+  #         secret_token: String.t() | nil,
+  #         transition_id: integer() | nil,
+  #         webhook_id: integer() | nil
+  #       }
 
   @impl Oban.Worker
   @spec perform(Oban.Job.t()) :: :ok | {:error, term()}
@@ -38,7 +38,7 @@ defmodule Fosm.Jobs.WebhookDeliveryJob do
     headers = build_headers(event_name, record_type, payload, secret)
 
     case Req.post(url, json: payload, headers: headers, receive_timeout: 30_000) do
-      {:ok, %{status: status} = response} when status in 200..299 ->
+      {:ok, %{status: status} = _response} when status in 200..299 ->
         log_success(webhook_id, url, status)
         :ok
 
@@ -63,7 +63,9 @@ defmodule Fosm.Jobs.WebhookDeliveryJob do
     end
   rescue
     e ->
-      Logger.error("WebhookDeliveryJob crashed for #{url}: #{Exception.message(e)}")
+      # Access url from args since it may not be in scope in rescue
+      rescue_url = args["url"]
+      Logger.error("WebhookDeliveryJob crashed for #{rescue_url}: #{Exception.message(e)}")
       {:error, e}
   end
 

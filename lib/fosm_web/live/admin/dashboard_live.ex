@@ -1,3 +1,4 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.DashboardLive do
   @moduledoc """
   Main dashboard LiveView for FOSM Admin.
@@ -149,24 +150,27 @@ defmodule FosmWeb.Admin.DashboardLive do
       from(r in module, where: r.state in ^non_terminal_states)
       |> Fosm.Repo.all()
     
-    return unless candidates != []
-    
-    candidate_ids = Enum.map(candidates, &to_string(&1.id))
-    table_name = module.__schema__(:source)
-    
-    recently_active =
-      from(t in Fosm.TransitionLog,
-        where: t.record_type == ^table_name,
-        where: t.record_id in ^candidate_ids,
-        where: t.created_at > ago(^stale_days, "day"),
-        select: t.record_id,
-        distinct: true
-      )
-      |> Fosm.Repo.all()
-      |> MapSet.new()
-    
-    candidates
-    |> Enum.reject(fn r -> to_string(r.id) in recently_active end)
-    |> length()
+    if candidates == [] do
+      0
+    else
+      candidate_ids = Enum.map(candidates, &to_string(&1.id))
+      table_name = module.__schema__(:source)
+      
+      recently_active =
+        from(t in Fosm.TransitionLog,
+          where: t.record_type == ^table_name,
+          where: t.record_id in ^candidate_ids,
+          where: t.created_at > ago(^stale_days, "day"),
+          select: t.record_id,
+          distinct: true
+        )
+        |> Fosm.Repo.all()
+        |> MapSet.new()
+      
+      candidates
+      |> Enum.reject(fn r -> to_string(r.id) in recently_active end)
+      |> length()
+    end
   end
+end
 end

@@ -56,11 +56,33 @@ defmodule Fosm.Errors do
     @moduledoc """
     Raised when a lifecycle guard check fails.
     """
-    defexception [:guard, :event, :reason, plug_status: 422]
+    defexception [:guard, :event, :reason, :module, plug_status: 422]
 
     def message(exception) do
       base = "Guard '#{exception.guard}' failed"
       if exception.reason, do: "#{base}: #{exception.reason}", else: base
+    end
+  end
+
+  defmodule UnknownEvent do
+    @moduledoc """
+    Raised when fire! is called with an event name that doesn't exist.
+    """
+    defexception [:event, :module, plug_status: 422]
+
+    def message(exception) do
+      "Unknown event '#{exception.event}'"
+    end
+  end
+
+  defmodule UnknownState do
+    @moduledoc """
+    Raised when a state is referenced that doesn't exist in the lifecycle.
+    """
+    defexception [:state, :module, plug_status: 422]
+
+    def message(exception) do
+      "Unknown state '#{exception.state}'"
     end
   end
 end

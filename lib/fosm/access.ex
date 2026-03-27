@@ -69,6 +69,7 @@ defmodule Fosm.Access do
       authorize!(conn, invoice, :read)
       authorize!(conn, invoice, :update)
   """
+  @spec authorize!(Plug.Conn.t(), struct(), atom()) :: :ok
   def authorize!(conn, record, action) do
     actor = conn.assigns[:current_user]
     module = record.__struct__
@@ -102,6 +103,7 @@ defmodule Fosm.Access do
       authorize_event!(conn, invoice, :pay)
       {:ok, updated} = Fosm.Invoice.fire!(invoice, :pay, actor: conn.assigns.current_user)
   """
+  @spec authorize_event!(Plug.Conn.t(), struct(), atom()) :: :ok
   def authorize_event!(conn, record, event_name) do
     actor = conn.assigns[:current_user]
     module = record.__struct__
@@ -131,6 +133,7 @@ defmodule Fosm.Access do
         redirect(conn, to: "/")
       end
   """
+  @spec can?(Plug.Conn.t(), struct(), atom()) :: boolean()
   def can?(conn, record, action) when is_struct(record) do
     actor = conn.assigns[:current_user]
     module = record.__struct__
@@ -152,31 +155,32 @@ defmodule Fosm.Access do
       can?(user, Fosm.Invoice, nil, :read)
       can?(user, Fosm.Invoice, invoice, :update)
   """
+  @spec can?(any(), module(), struct() | nil, atom()) :: boolean()
   def can?(actor, module, record \\ nil, action) do
     lifecycle = module.fosm_lifecycle()
 
     # If no access control defined, allow all
     if is_nil(lifecycle.access) or lifecycle.access == [] do
-      return true
+      true
+    else
+      # Get actor's roles
+      resource_type = module.__schema__(:source)
+      record_id = if record, do: record.id, else: nil
+      roles = Fosm.Current.roles_for(actor, resource_type, record_id)
+
+      # Check if any role allows the action
+      Enum.any?(lifecycle.access, fn role_def ->
+        role_name = role_def.name
+
+        # Check if actor has this role
+        if role_name in roles or :_all in roles do
+          # Check if role allows the action
+          action in role_def.permissions or :crud in role_def.permissions
+        else
+          false
+        end
+      end)
     end
-
-    # Get actor's roles
-    resource_type = module.__schema__(:source)
-    record_id = if record, do: record.id, else: nil
-    roles = Fosm.Current.roles_for(actor, resource_type, record_id)
-
-    # Check if any role allows the action
-    Enum.any?(lifecycle.access, fn role_def ->
-      role_name = role_def.name
-
-      # Check if actor has this role
-      if role_name in roles or :_all in roles do
-        # Check if role allows the action
-        action in role_def.permissions or :crud in role_def.permissions
-      else
-        false
-      end
-    end)
   end
 
   @doc """
@@ -195,34 +199,35 @@ defmodule Fosm.Access do
         # Show pay button
       end
   """
+  @spec can_fire_event?(any(), module(), struct(), atom()) :: boolean()
   def can_fire_event?(actor, module, record, event_name) do
     lifecycle = module.fosm_lifecycle()
     event_name = String.to_atom(to_string(event_name))
 
     # If no access control defined, allow all
     if is_nil(lifecycle.access) or lifecycle.access == [] do
-      return true
+      true
+    else
+      # Get actor's roles
+      resource_type = module.__schema__(:source)
+      record_id = if record, do: record.id, else: nil
+      roles = Fosm.Current.roles_for(actor, resource_type, record_id)
+
+      # Check if any role allows this event
+      Enum.any?(lifecycle.access, fn role_def ->
+        role_name = role_def.name
+
+        # Check if actor has this role
+        if role_name in roles or :_all in roles do
+          # Check if role allows this specific event
+          event_name in role_def.event_permissions or
+            :crud in role_def.permissions or
+            :manage in role_def.permissions
+        else
+          false
+        end
+      end)
     end
-
-    # Get actor's roles
-    resource_type = module.__schema__(:source)
-    record_id = if record, do: record.id, else: nil
-    roles = Fosm.Current.roles_for(actor, resource_type, record_id)
-
-    # Check if any role allows this event
-    Enum.any?(lifecycle.access, fn role_def ->
-      role_name = role_def.name
-
-      # Check if actor has this role
-      if role_name in roles or :_all in roles do
-        # Check if role allows this specific event
-        event_name in role_def.event_permissions or
-          :crud in role_def.permissions or
-          :manage in role_def.permissions
-      else
-        false
-      end
-    end)
   end
 
   # ============================================================================
@@ -250,15 +255,18 @@ defmodule Fosm.Access do
       # This is called internally by fire!, not directly
       enforce_event_access!(lifecycle, invoice, :pay, current_user)
   """
+  @spec enforce_event_access!(any(), struct(), atom(), any()) :: :ok
   def enforce_event_access!(lifecycle, record, event_name, actor) do
-    # Skip if no access control defined
-    if is_nil(lifecycle.access) or lifecycle.access == [] do
-      _ = nil
-    else
+    cond do
+      # Skip if no access control defined
+      is_nil(lifecycle.access) or lifecycle.access == [] ->
+        :ok
+
       # Skip for bypassed actors
-      if bypassed_actor?(actor) do
-        _ = nil
-      else
+      bypassed_actor?(actor) ->
+        :ok
+
+      true ->
         module = record.__struct__
         resource_type = module.__schema__(:source)
         record_id = record.id
@@ -266,60 +274,33 @@ defmodule Fosm.Access do
         # Get roles (uses cache internally)
         roles = Fosm.Current.roles_for(actor, resource_type, record_id)
 
-        # Check event permission
-        event_rules = 
-          lifecycle.access
-          |> Enum.filter(&(&1.role_name in roles))
-          |> Enum.flat_map(& &1.permissions)
-          |> Enum.filter(&match?({:event, _}, &1))
-          |> Enum.map(fn {:event, name} -> name end)
+        # Check permission
+        event_name = String.to_atom(to_string(event_name))
 
-        if event_name in event_rules or :crud in event_rules do
+        has_permission =
+          Enum.any?(lifecycle.access, fn role_def ->
+            role_name = role_def.name
+
+            if role_name in roles or :_all in roles do
+              event_name in role_def.event_permissions or
+                :crud in role_def.permissions or
+                :manage in role_def.permissions
+            else
+              false
+            end
+          end)
+
+        if has_permission do
           :ok
         else
-          raise Fosm.AccessDeniedError,
-            event: event_name,
-            record: record,
-            roles: roles
+          raise AccessDenied,
+            action: event_name,
+            resource_type: resource_type,
+            resource_id: record_id,
+            actor: actor,
+            roles: roles,
+            reason: "Actor lacks permission to fire '#{event_name}'"
         end
-      end
-    end
-
-    :ok
-
-    module = record.__struct__
-    resource_type = module.__schema__(:source)
-    record_id = record.id
-
-    # Get roles (uses cache internally)
-    roles = Fosm.Current.roles_for(actor, resource_type, record_id)
-
-    # Check permission
-    event_name = String.to_atom(to_string(event_name))
-
-    has_permission =
-      Enum.any?(lifecycle.access, fn role_def ->
-        role_name = role_def.name
-
-        if role_name in roles or :_all in roles do
-          event_name in role_def.event_permissions or
-            :crud in role_def.permissions or
-            :manage in role_def.permissions
-        else
-          false
-        end
-      end)
-
-    if has_permission do
-      :ok
-    else
-      raise AccessDenied,
-        action: event_name,
-        resource_type: resource_type,
-        resource_id: record_id,
-        actor: actor,
-        roles: roles,
-        reason: "Actor lacks permission to fire '#{event_name}'"
     end
   end
 
@@ -333,6 +314,7 @@ defmodule Fosm.Access do
       available_events = Fosm.Access.available_events(user, invoice)
       # => [:view, :edit, :send]  (only permitted events)
   """
+  @spec available_events(any(), struct()) :: [atom()]
   def available_events(actor, record) do
     module = record.__struct__
     lifecycle = module.fosm_lifecycle()

@@ -88,21 +88,6 @@ defmodule Fosm.Agent do
     temperature: float() | nil
   }
 
-  defmodule Response do
-    @moduledoc """
-    Response from an agent run.
-    """
-    defstruct [:text, :tool_calls, :reasoning, :usage, :model]
-
-    @type t :: %__MODULE__{
-      text: String.t(),
-      tool_calls: [map()],
-      reasoning: String.t() | nil,
-      usage: map() | nil,
-      model: String.t()
-    }
-  end
-
   @default_max_tokens 4096
   @default_temperature 0.7
 

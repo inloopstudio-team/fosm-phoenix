@@ -1,11 +1,10 @@
+if Code.ensure_loaded?(Phoenix.LiveView) or Code.ensure_loaded?(Phoenix.Component) do
 defmodule FosmWeb.Admin.Layout do
   @moduledoc """
   Admin layout component with sidebar navigation.
   """
 
-  use FosmWeb, :html
-
-  embed_templates "layouts/*"
+  use Phoenix.Component
 
   @nav_items [
     %{path: "/fosm/admin", icon: "home", label: "Dashboard"},
@@ -28,21 +27,21 @@ defmodule FosmWeb.Admin.Layout do
             FOSM Admin
           </h1>
         </div>
-        
+
         <nav class="p-4 space-y-1">
           <%= for item <- @nav_items do %>
-            <.nav_link 
-              path={item.path} 
-              icon={item.icon} 
-              label={item.label} 
+            <.nav_link
+              path={item.path}
+              icon={item.icon}
+              label={item.label}
               active={@current_path == item.path}
             />
           <% end %>
         </nav>
-        
+
         <div class="mt-auto p-4 border-t border-gray-800">
           <div class="text-xs text-gray-400">
-            <p>FOSM Phoenix v<%= Fosm.MixProject.project()[:version] %></p>
+            <p>FOSM Phoenix</p>
           </div>
         </div>
       </aside>
@@ -50,7 +49,7 @@ defmodule FosmWeb.Admin.Layout do
       <!-- Main Content -->
       <main class="flex-1 overflow-y-auto">
         <div class="p-6">
-          <%= @inner_content %>
+          <%= render_slot(@inner_content) %>
         </div>
       </main>
     </div>
@@ -59,8 +58,8 @@ defmodule FosmWeb.Admin.Layout do
 
   defp nav_link(assigns) do
     ~H"""
-    <.link
-      navigate={@path}
+    <a
+      href={@path}
       class={[
         "flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors",
         if(@active, do: "bg-blue-600 text-white", else: "text-gray-300 hover:bg-gray-800 hover:text-white")
@@ -68,7 +67,7 @@ defmodule FosmWeb.Admin.Layout do
     >
       <.icon name={@icon} class="w-4 h-4" />
       <span><%= @label %></span>
-    </.link>
+    </a>
     """
   end
 
@@ -119,9 +118,5 @@ defmodule FosmWeb.Admin.Layout do
         """
     end
   end
-
-  @doc """
-  Returns navigation items for use in other components.
-  """
-  def nav_items, do: @nav_items
+end
 end
